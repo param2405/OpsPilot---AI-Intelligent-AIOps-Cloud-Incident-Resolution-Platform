@@ -1,0 +1,651 @@
+/* OpsPilot AI - Phase 2 Observability & Telemetry Surfaces */
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  animation: fadeIn 220ms ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Section Headlines */
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.section-head p {
+  margin: 4px 0 0;
+  color: var(--ink-dim);
+  font-size: 13px;
+}
+
+/* KPI Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.kpi-card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.kpi-card:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--filament), transparent);
+  opacity: 0.7;
+}
+
+.kpi-card.alert::before {
+  background: linear-gradient(90deg, var(--signal-bad), transparent);
+}
+
+.kpi-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+  margin-bottom: 10px;
+}
+
+.kpi-value {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.kpi-value.alert {
+  color: var(--signal-bad);
+}
+
+.kpi-sub {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+}
+
+/* Fleet Services Grid */
+.fleet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.fleet-card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 160ms ease;
+}
+
+.fleet-card:hover {
+  border-color: var(--line-strong);
+}
+
+.fleet-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.fleet-service-name {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.fleet-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.badge-critical {
+  background: rgba(211, 106, 88, 0.18);
+  color: #f17c6a;
+  border: 1px solid rgba(211, 106, 88, 0.4);
+}
+
+.badge-standard {
+  background: rgba(212, 120, 74, 0.18);
+  color: var(--filament);
+  border: 1px solid rgba(212, 120, 74, 0.4);
+}
+
+.badge-supporting {
+  background: rgba(243, 236, 228, 0.08);
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+}
+
+.fleet-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.meter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--ink-dim);
+}
+
+.meter-bar-bg {
+  width: 110px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.meter-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--filament);
+  transition: width 300ms ease;
+}
+
+.meter-bar-fill.warning {
+  background: var(--signal-wait);
+}
+
+.meter-bar-fill.critical {
+  background: var(--signal-bad);
+}
+
+/* Filter Controls */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 18px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.filter-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.filter-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--mono);
+  transition: all 140ms ease;
+}
+
+.filter-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+}
+
+.filter-btn.active {
+  background: var(--filament-soft);
+  color: var(--ink);
+  border-color: var(--filament);
+}
+
+.search-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--sans);
+  flex-grow: 1;
+  min-width: 220px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--filament);
+}
+
+.select-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--mono);
+  cursor: pointer;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: var(--filament);
+}
+
+/* Incidents Table / List */
+.table-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ops-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.ops-table th {
+  padding: 12px 18px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--ink-faint);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--line);
+}
+
+.ops-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.ops-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ops-table tr.clickable {
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.ops-table tr.clickable:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Incident Badges */
+.badge-p1 {
+  background: rgba(211, 106, 88, 0.2);
+  color: #ff8b7b;
+  border: 1px solid rgba(211, 106, 88, 0.5);
+}
+
+.badge-p2 {
+  background: rgba(212, 120, 74, 0.2);
+  color: #ff9b6d;
+  border: 1px solid rgba(212, 120, 74, 0.5);
+}
+
+.badge-p3 {
+  background: rgba(201, 162, 39, 0.2);
+  color: #ffd447;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+}
+
+.badge-p4 {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+}
+
+/* Lifecycle status badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.status-pill .dot {
+  width: 6px;
+  height: 6px;
+}
+
+/* Incident Detail Drawer / Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.incident-drawer {
+  width: min(600px, 92vw);
+  height: 100vh;
+  background: var(--bg-elevated);
+  border-left: 1px solid var(--line-strong);
+  padding: 32px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--shadow);
+  animation: slideIn 240ms ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-header h3 {
+  margin: 6px 0 0;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.close-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+}
+
+.drawer-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.symptoms-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ink-dim);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.root-cause-box {
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(212, 120, 74, 0.09);
+  border: 1px solid rgba(212, 120, 74, 0.25);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Telemetry Charts */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 20px;
+}
+
+.chart-card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.chart-cur-val {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--filament);
+}
+
+.chart-svg-container {
+  width: 100%;
+  height: 150px;
+}
+
+.chart-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Log Console Explorer */
+.log-console {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #0d0b09;
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.log-console-header {
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
+.log-entries-list {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.log-item {
+  display: grid;
+  grid-template-columns: 140px 140px 70px 1fr auto;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(243, 236, 228, 0.04);
+  align-items: flex-start;
+  transition: background 120ms ease;
+}
+
+.log-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.log-time {
+  color: var(--ink-faint);
+}
+
+.log-svc {
+  color: var(--filament);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-lvl {
+  font-weight: 600;
+}
+
+.log-lvl.ERROR, .log-lvl.FATAL {
+  color: var(--signal-bad);
+}
+
+.log-lvl.WARN {
+  color: var(--signal-wait);
+}
+
+.log-lvl.INFO {
+  color: var(--sage);
+}
+
+.log-lvl.DEBUG {
+  color: var(--ink-faint);
+}
+
+.log-msg {
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.log-trace {
+  font-size: 10px;
+  color: var(--ink-faint);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Deployments Feed */
+.deployment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.16);
+  margin-bottom: 8px;
+}
+
+.dep-version {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dep-meta {
+  color: var(--ink-dim);
+  font-size: 12px;
+  font-family: var(--mono);
+}

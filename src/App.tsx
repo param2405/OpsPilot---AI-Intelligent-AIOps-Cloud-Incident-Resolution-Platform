@@ -1,17 +1,22 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
+import { DashboardPage } from "./pages/DashboardPage";
 import { FoundationPage } from "./pages/FoundationPage";
+import { IncidentsPage } from "./pages/IncidentsPage";
 import { LaterPhasePage } from "./pages/LaterPhasePage";
+import { LogsPage } from "./pages/LogsPage";
+import { MetricsPage } from "./pages/MetricsPage";
 
 export default function App() {
   return (
     <AppShell>
       <Routes>
-        <Route path="/" element={<FoundationPage />} />
-        <Route path="/dashboard" element={<LaterPhasePage />} />
-        <Route path="/incidents" element={<LaterPhasePage />} />
-        <Route path="/metrics" element={<LaterPhasePage />} />
-        <Route path="/logs" element={<LaterPhasePage />} />
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/incidents" element={<IncidentsPage />} />
+        <Route path="/metrics" element={<MetricsPage />} />
+        <Route path="/logs" element={<LogsPage />} />
+        <Route path="/foundation" element={<FoundationPage />} />
         <Route path="/investigation" element={<LaterPhasePage />} />
         <Route path="/recommendations" element={<LaterPhasePage />} />
         <Route path="/settings" element={<LaterPhasePage />} />
