@@ -7,7 +7,7 @@ export function LogsPage() {
   const [selectedService, setSelectedService] = useState<string>("ALL");
   const [selectedLevel, setSelectedLevel] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+  const [expandedLogId, setExpandedLogId] = useState<string | number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -59,7 +59,7 @@ export function DashboardPage() {
   );
   const p1Count = activeIncidents.filter((i) => i.severity === "P1_CRITICAL").length;
 
-  const latencies = Object.values(metrics).map((m) => m.request_latency_p95);
+  const latencies = Object.values(metrics).map((m) => m.latency_p95_ms ?? 0);
   const avgLatency =
     latencies.length > 0
       ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length)
@@ -113,9 +113,9 @@ export function DashboardPage() {
         <div className="fleet-grid">
           {services.map((svc) => {
             const m = metrics[svc.id];
-            const cpu = m ? Math.round(m.cpu_utilization) : 45;
-            const mem = m ? Math.round(m.memory_utilization) : 58;
-            const lat = m ? Math.round(m.request_latency_p95) : 180;
+            const cpu = m ? Math.round(m.cpu_usage ?? 45) : 45;
+            const mem = m ? Math.round(m.memory_usage ?? 58) : 58;
+            const lat = m ? Math.round(m.latency_p95_ms ?? 180) : 180;
             const hasP1 = activeIncidents.some((i) => i.service_id === svc.id);
 
             return (

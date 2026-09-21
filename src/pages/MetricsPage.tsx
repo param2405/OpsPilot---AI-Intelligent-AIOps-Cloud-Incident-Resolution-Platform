@@ -10,59 +10,84 @@ import {
 
 export function MetricsPage() {
   const [services, setServices] = useState<Service[]>([]);
-  const [selectedService, setSelectedService] = useState<string>("checkout-service");
+  const [selectedService, setSelectedService] = useState<string>("");
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [summary, setSummary] = useState<MetricSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 1. Initial service list fetch
   useEffect(() => {
+    let isMounted = true;
     async function loadServices() {
       const svcs = await fetchServices();
+      if (!isMounted) return;
       setServices(svcs);
-      if (svcs.length > 0 && !svcs.find((s) => s.id === selectedService)) {
-        setSelectedService(svcs[0].id);
+      if (svcs.length > 0) {
+        setSelectedService((prev) => (prev ? prev : svcs[0].id));
       }
     }
     loadServices();
-  }, [selectedService]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
+  // 2. Fetch telemetry when selected service changes
   useEffect(() => {
+    let isMounted = true;
+    if (!selectedService) return;
+
     async function loadTelemetry() {
-      if (!selectedService) return;
       setLoading(true);
-      const [mList, mSummary] = await Promise.all([
-        fetchMetrics(selectedService, 30),
-        fetchMetricsSummary(selectedService),
-      ]);
-      // Sort chronologically ascending for charts
-      const sorted = [...mList].sort(
-        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-      );
-      setMetrics(sorted);
-      setSummary(mSummary);
-      setLoading(false);
+      try {
+        const [mList, mSummary] = await Promise.all([
+          fetchMetrics(selectedService, 30),
+          fetchMetricsSummary(selectedService),
+        ]);
+        if (!isMounted) return;
+
+        const sorted = [...mList].sort(
+          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+        );
+        setMetrics(sorted);
+        setSummary(mSummary);
+      } catch (err) {
+        console.error("Failed to load telemetry:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     }
     loadTelemetry();
+    return () => {
+      isMounted = false;
+    };
   }, [selectedService]);
 
-  // Helper to render responsive SVG area/line chart
+  // Defensive SVG chart renderer
   const renderSvgChart = (
     data: number[],
     color: string,
-    _unit: string,
     minVal: number = 0,
     maxVal?: number,
   ) => {
-    if (data.length < 2) return null;
-    const computedMax = maxVal ?? Math.max(...data, 1);
-    const range = computedMax - minVal || 1;
+    const validData = (data || []).map((v) => (Number.isFinite(v) ? Number(v) : 0));
+    if (validData.length < 2) {
+      return (
+        <div style={{ padding: "30px", textAlign: "center", color: "var(--ink-faint)", fontSize: "12px" }}>
+          Gathering telemetry time-series points...
+        </div>
+      );
+    }
+
+    const computedMax = maxVal ?? Math.max(...validData, 1);
+    const range = Math.max(computedMax - minVal, 1);
     const width = 500;
     const height = 120;
-    const padding = 10;
+    const padding = 12;
 
-    const points = data.map((val, idx) => {
-      const x = padding + (idx / (data.length - 1)) * (width - padding * 2);
-      const normalized = (val - minVal) / range;
+    const points = validData.map((val, idx) => {
+      const x = padding + (idx / (validData.length - 1)) * (width - padding * 2);
+      const normalized = Math.min(Math.max((val - minVal) / range, 0), 1);
       const y = height - padding - normalized * (height - padding * 2);
       return { x, y };
     });
@@ -74,11 +99,13 @@ export function MetricsPage() {
 
     const areaD = `${pathD} L ${points[points.length - 1].x},${height - padding} L ${points[0].x},${height - padding} Z`;
 
+    const gradId = `grad-${color.replace(/[^a-zA-Z0-9]/g, "")}`;
+
     return (
       <div className="chart-svg-container">
         <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" preserveAspectRatio="none">
           <defs>
-            <linearGradient id={`grad-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={color} stopOpacity="0.35" />
               <stop offset="100%" stopColor={color} stopOpacity="0.0" />
             </linearGradient>
@@ -103,7 +130,7 @@ export function MetricsPage() {
           />
 
           {/* Shaded Area */}
-          <path d={areaD} fill={`url(#grad-${color.replace("#", "")})`} />
+          <path d={areaD} fill={`url(#${gradId})`} />
 
           {/* Telemetry Line */}
           <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
@@ -125,6 +152,12 @@ export function MetricsPage() {
   };
 
   const currentMetric = metrics.length > 0 ? metrics[metrics.length - 1] : null;
+  const cpuVal = currentMetric?.cpu_usage ?? 0;
+  const memVal = currentMetric?.memory_usage ?? 0;
+  const latVal = currentMetric?.latency_p95_ms ?? 0;
+  const errVal = currentMetric?.error_rate ?? 0;
+  // If error rate is fractional (e.g. 0.04), convert to percentage
+  const errPct = errVal < 1 ? errVal * 100 : errVal;
 
   return (
     <div className="page-container">
@@ -156,20 +189,20 @@ export function MetricsPage() {
         <div className="kpi-card">
           <span className="kpi-label">CPU Utilization</span>
           <span className="kpi-value">
-            {currentMetric ? `${currentMetric.cpu_utilization.toFixed(1)}%` : "..."}
+            {currentMetric ? `${cpuVal.toFixed(1)}%` : "..."}
           </span>
           <span className="kpi-sub">
-            Avg: {summary?.avg_cpu ?? "-"}% · Peak: {summary?.max_cpu ?? "-"}%
+            Avg: {summary?.avg_cpu_usage?.toFixed(1) ?? "-"}% · Peak: {summary?.max_cpu_usage?.toFixed(1) ?? "-"}%
           </span>
         </div>
 
         <div className="kpi-card">
           <span className="kpi-label">Memory Utilization</span>
           <span className="kpi-value">
-            {currentMetric ? `${currentMetric.memory_utilization.toFixed(1)}%` : "..."}
+            {currentMetric ? `${memVal.toFixed(1)}%` : "..."}
           </span>
           <span className="kpi-sub">
-            Avg: {summary?.avg_memory ?? "-"}% · Peak: {summary?.max_memory ?? "-"}%
+            Avg: {summary?.avg_memory_usage?.toFixed(1) ?? "-"}% · Peak: {summary?.max_memory_usage?.toFixed(1) ?? "-"}%
           </span>
         </div>
 
@@ -178,17 +211,14 @@ export function MetricsPage() {
           <span
             className="kpi-value"
             style={{
-              color:
-                currentMetric && currentMetric.request_latency_p95 > 1000
-                  ? "var(--signal-bad)"
-                  : "inherit",
+              color: latVal > 1000 ? "var(--signal-bad)" : "inherit",
             }}
           >
-            {currentMetric ? `${Math.round(currentMetric.request_latency_p95)}ms` : "..."}
+            {currentMetric ? `${Math.round(latVal)}ms` : "..."}
           </span>
           <span className="kpi-sub">
-            Avg: {summary ? Math.round(summary.avg_latency_p95) : "-"}ms · Peak:{" "}
-            {summary ? Math.round(summary.max_latency_p95) : "-"}ms
+            Avg: {summary ? Math.round(summary.avg_latency_p95_ms) : "-"}ms · Peak:{" "}
+            {summary ? Math.round(summary.max_latency_p95_ms) : "-"}ms
           </span>
         </div>
 
@@ -197,16 +227,13 @@ export function MetricsPage() {
           <span
             className="kpi-value"
             style={{
-              color:
-                currentMetric && currentMetric.error_rate > 2
-                  ? "var(--signal-bad)"
-                  : "inherit",
+              color: errPct > 2 ? "var(--signal-bad)" : "inherit",
             }}
           >
-            {currentMetric ? `${currentMetric.error_rate.toFixed(2)}%` : "..."}
+            {currentMetric ? `${errPct.toFixed(2)}%` : "..."}
           </span>
           <span className="kpi-sub">
-            Avg: {summary?.avg_error_rate ?? "-"}% · Max: {summary?.max_error_rate ?? "-"}%
+            Avg: {summary ? `${(summary.avg_error_rate * (summary.avg_error_rate < 1 ? 100 : 1)).toFixed(2)}%` : "-"}
           </span>
         </div>
       </section>
@@ -215,8 +242,8 @@ export function MetricsPage() {
       <section>
         <div className="section-head">
           <div>
-            <h2>Telemetry Trends (Last 25 Interval Windows)</h2>
-            <p>Fine-grained resource utilization and SLA time-series.</p>
+            <h2>Telemetry Trends ({metrics.length} Recorded Windows)</h2>
+            <p>Fine-grained resource utilization and SLA time-series for {selectedService}.</p>
           </div>
         </div>
 
@@ -231,13 +258,12 @@ export function MetricsPage() {
               <div className="chart-header">
                 <span className="chart-title">CPU Utilization (%)</span>
                 <span className="chart-cur-val">
-                  {currentMetric ? `${currentMetric.cpu_utilization.toFixed(1)}%` : ""}
+                  {currentMetric ? `${cpuVal.toFixed(1)}%` : ""}
                 </span>
               </div>
               {renderSvgChart(
-                metrics.map((m) => m.cpu_utilization),
+                metrics.map((m) => m.cpu_usage),
                 "#d4784a",
-                "%",
                 0,
                 100,
               )}
@@ -248,13 +274,12 @@ export function MetricsPage() {
               <div className="chart-header">
                 <span className="chart-title">Memory Allocation (%)</span>
                 <span className="chart-cur-val">
-                  {currentMetric ? `${currentMetric.memory_utilization.toFixed(1)}%` : ""}
+                  {currentMetric ? `${memVal.toFixed(1)}%` : ""}
                 </span>
               </div>
               {renderSvgChart(
-                metrics.map((m) => m.memory_utilization),
+                metrics.map((m) => m.memory_usage),
                 "#8fbf9f",
-                "%",
                 0,
                 100,
               )}
@@ -265,13 +290,12 @@ export function MetricsPage() {
               <div className="chart-header">
                 <span className="chart-title">p95 Request Latency (ms)</span>
                 <span className="chart-cur-val">
-                  {currentMetric ? `${Math.round(currentMetric.request_latency_p95)} ms` : ""}
+                  {currentMetric ? `${Math.round(latVal)} ms` : ""}
                 </span>
               </div>
               {renderSvgChart(
-                metrics.map((m) => m.request_latency_p95),
-                currentMetric && currentMetric.request_latency_p95 > 1000 ? "#d36a58" : "#d4784a",
-                "ms",
+                metrics.map((m) => m.latency_p95_ms),
+                latVal > 1000 ? "#d36a58" : "#d4784a",
                 0,
               )}
             </div>
@@ -281,13 +305,12 @@ export function MetricsPage() {
               <div className="chart-header">
                 <span className="chart-title">Error Rate (%)</span>
                 <span className="chart-cur-val">
-                  {currentMetric ? `${currentMetric.error_rate.toFixed(2)}%` : ""}
+                  {currentMetric ? `${errPct.toFixed(2)}%` : ""}
                 </span>
               </div>
               {renderSvgChart(
-                metrics.map((m) => m.error_rate),
+                metrics.map((m) => (m.error_rate < 1 ? m.error_rate * 100 : m.error_rate)),
                 "#d36a58",
-                "%",
                 0,
               )}
             </div>

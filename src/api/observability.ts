@@ -3,118 +3,134 @@ import { apiGet } from "./client";
 export interface Service {
   id: string;
   name: string;
-  tier: "CRITICAL" | "STANDARD" | "SUPPORTING" | string;
-  environment: string;
+  tier: string;
+  owner_team?: string;
+  environment?: string;
   created_at: string;
 }
 
 export interface Metric {
-  id: string;
+  id: string | number;
   service_id: string;
-  cpu_utilization: number;
-  memory_utilization: number;
-  request_latency_p95: number;
+  cpu_usage: number;
+  memory_usage: number;
+  latency_p95_ms: number;
   error_rate: number;
-  throughput_rpm: number;
+  disk_usage?: number;
+  network_traffic_kbps?: number;
+  request_count?: number;
+  active_connections?: number;
+  throughput_rpm?: number;
   timestamp: string;
 }
 
 export interface MetricSummary {
   service_id: string;
-  avg_cpu: number;
-  max_cpu: number;
-  avg_memory: number;
-  max_memory: number;
-  avg_latency_p95: number;
-  max_latency_p95: number;
+  sample_count: number;
+  avg_cpu_usage: number;
+  max_cpu_usage: number;
+  avg_memory_usage: number;
+  max_memory_usage: number;
+  avg_latency_p95_ms: number;
+  max_latency_p95_ms: number;
   avg_error_rate: number;
   max_error_rate: number;
-  sample_count: number;
 }
 
 export interface LogEntry {
-  id: string;
+  id: string | number;
   service_id: string;
-  log_level: "DEBUG" | "INFO" | "WARN" | "ERROR" | "FATAL" | string;
+  log_level: string;
   message: string;
   trace_id: string | null;
-  context_data: Record<string, unknown> | null;
+  metadata_json?: Record<string, unknown> | null;
+  context_data?: Record<string, unknown> | null;
   timestamp: string;
 }
 
 export interface Deployment {
-  id: string;
+  id: string | number;
   service_id: string;
   version: string;
   environment: string;
-  status: "SUCCESS" | "FAILED" | "ROLLED_BACK" | string;
-  deployed_by: string;
-  commit_hash: string;
-  timestamp: string;
+  status: string;
+  deployed_at?: string;
+  deployed_by?: string;
+  commit_hash?: string;
+  changelog?: string;
+  timestamp?: string;
 }
 
 export interface Incident {
-  incident_id: string;
+  id: string;
+  incident_id?: string;
   title: string;
   service_id: string;
-  severity: "P1_CRITICAL" | "P2_HIGH" | "P3_MEDIUM" | "P4_LOW" | string;
-  status: "INVESTIGATING" | "IDENTIFIED" | "MITIGATED" | "RESOLVED" | string;
+  severity: string;
+  status: string;
   incident_type: string;
-  symptoms: string[];
-  root_cause_hypothesis: string | null;
-  detected_at: string;
-  mitigated_at: string | null;
-  resolved_at: string | null;
+  symptoms: string[] | string;
+  root_cause?: string;
+  root_cause_hypothesis?: string | null;
+  resolution?: string;
+  started_at?: string;
+  detected_at?: string;
+  mitigated_at?: string | null;
+  resolved_at?: string | null;
 }
 
-// Fallback seed data to ensure instant UI responsiveness even during API cold starts
+// Fallback seed data in case API is temporarily unavailable
 const FALLBACK_SERVICES: Service[] = [
-  { id: "checkout-service", name: "Checkout API", tier: "CRITICAL", environment: "production", created_at: "2026-09-01T00:00:00Z" },
-  { id: "payment-service", name: "Payment Gateway Core", tier: "CRITICAL", environment: "production", created_at: "2026-09-01T00:00:00Z" },
-  { id: "auth-service", name: "Authentication & IAM", tier: "CRITICAL", environment: "production", created_at: "2026-09-01T00:00:00Z" },
-  { id: "inventory-service", name: "Inventory Catalog", tier: "STANDARD", environment: "production", created_at: "2026-09-01T00:00:00Z" },
-  { id: "api-gateway", name: "Global Edge Gateway", tier: "CRITICAL", environment: "production", created_at: "2026-09-01T00:00:00Z" },
+  { id: "api-gateway", name: "API Gateway", tier: "critical", owner_team: "platform", environment: "production", created_at: "2026-09-01T00:00:00Z" },
+  { id: "auth-service", name: "Authentication Service", tier: "critical", owner_team: "identity", environment: "production", created_at: "2026-09-01T00:00:00Z" },
+  { id: "order-service", name: "Order Management Service", tier: "critical", owner_team: "checkout", environment: "production", created_at: "2026-09-01T00:00:00Z" },
+  { id: "payment-service", name: "Payment Processing Service", tier: "critical", owner_team: "payments", environment: "production", created_at: "2026-09-01T00:00:00Z" },
+  { id: "inventory-service", name: "Inventory & Catalog Service", tier: "high", owner_team: "catalog", environment: "production", created_at: "2026-09-01T00:00:00Z" },
+  { id: "notification-service", name: "Notification & Messaging Service", tier: "standard", owner_team: "messaging", environment: "production", created_at: "2026-09-01T00:00:00Z" },
 ];
 
 const FALLBACK_INCIDENTS: Incident[] = [
   {
-    incident_id: "INC-2026-0901",
-    title: "Checkout Latency Spike and Connection Pool Exhaustion",
-    service_id: "checkout-service",
+    id: "INC-2026-001",
+    incident_id: "INC-2026-001",
+    title: "Auth Service CPU Starvation in JWT Verification Loop",
+    service_id: "auth-service",
     severity: "P1_CRITICAL",
     status: "INVESTIGATING",
-    incident_type: "database_pool_exhaustion",
-    symptoms: ["HTTP 504 Gateway Timeouts", "p95 latency exceeded 2500ms", "DB pool active connections at 100%"],
-    root_cause_hypothesis: "Downstream payment validation query blocked on unindexed lock during flash traffic",
-    detected_at: new Date(Date.now() - 24 * 60000).toISOString(),
+    incident_type: "CPU_SATURATION",
+    symptoms: ["Auth service CPU pegged at 99%", "p95 latency spiked from 35ms to 1850ms", "Client token verification timeouts"],
+    root_cause_hypothesis: "Catastrophic backtracking in regex claims parsing under sustained concurrent traffic",
+    detected_at: new Date(Date.now() - 35 * 60000).toISOString(),
     mitigated_at: null,
     resolved_at: null,
   },
   {
-    incident_id: "INC-2026-0899",
-    title: "Auth Token Signing Certificate Expiry Warning",
-    service_id: "auth-service",
-    severity: "P2_HIGH",
+    id: "INC-2026-002",
+    incident_id: "INC-2026-002",
+    title: "Payment Service DB Connection Pool Saturation",
+    service_id: "payment-service",
+    severity: "P1_CRITICAL",
     status: "IDENTIFIED",
-    incident_type: "certificate_expiration",
-    symptoms: ["Transient 401 Unauthorized for OAuth introspection", "JWKS cache refresh retries elevated"],
-    root_cause_hypothesis: "Secondary KMS key rotation lease timed out in region us-east-1",
-    detected_at: new Date(Date.now() - 90 * 60000).toISOString(),
+    incident_type: "DB_CONNECTION_EXHAUSTION",
+    symptoms: ["Payment processing error rate spiked to 78%", "p95 latency jumped to 5000ms timeout", "Active DB connections at 100/100 limit"],
+    root_cause_hypothesis: "Missing transaction commit in idempotency verification left PostgreSQL sessions in 'idle in transaction'",
+    detected_at: new Date(Date.now() - 85 * 60000).toISOString(),
     mitigated_at: new Date(Date.now() - 15 * 60000).toISOString(),
     resolved_at: null,
   },
   {
-    incident_id: "INC-2026-0894",
-    title: "Inventory Stock Sync Kafka Lag Degradation",
+    id: "INC-2026-004",
+    incident_id: "INC-2026-004",
+    title: "Inventory Query Latency Spike Cascading to API Gateway",
     service_id: "inventory-service",
-    severity: "P3_MEDIUM",
+    severity: "P2_HIGH",
     status: "RESOLVED",
-    incident_type: "consumer_lag",
-    symptoms: ["Consumer lag crossed 50,000 offsets", "Eventual consistency delay in product stock count"],
-    root_cause_hypothesis: "Rebalance triggered by autoscale pod churn",
-    detected_at: new Date(Date.now() - 240 * 60000).toISOString(),
-    mitigated_at: new Date(Date.now() - 180 * 60000).toISOString(),
-    resolved_at: new Date(Date.now() - 120 * 60000).toISOString(),
+    incident_type: "API_LATENCY_SPIKE",
+    symptoms: ["Inventory p95 latency degraded from 40ms to 3200ms", "API gateway queued 180 concurrent requests"],
+    root_cause_hypothesis: "Sequential table scan on inventory_items due to missing composite index on (warehouse_id, sku)",
+    detected_at: new Date(Date.now() - 300 * 60000).toISOString(),
+    mitigated_at: new Date(Date.now() - 240 * 60000).toISOString(),
+    resolved_at: new Date(Date.now() - 200 * 60000).toISOString(),
   },
 ];
 
@@ -123,15 +139,18 @@ const generateFallbackMetrics = (serviceId: string): Metric[] => {
   const now = Date.now();
   for (let i = 24; i >= 0; i--) {
     const ts = new Date(now - i * 5 * 60000).toISOString();
-    const isSpike = serviceId === "checkout-service" && i <= 5;
+    const isSpike = (serviceId === "auth-service" || serviceId === "payment-service") && i <= 5;
     points.push({
       id: `m-${serviceId}-${i}`,
       service_id: serviceId,
-      cpu_utilization: isSpike ? 88.5 + Math.random() * 8 : 42.0 + Math.random() * 15,
-      memory_utilization: isSpike ? 79.2 + Math.random() * 5 : 55.0 + Math.random() * 8,
-      request_latency_p95: isSpike ? 2450 + Math.random() * 400 : 120 + Math.random() * 80,
-      error_rate: isSpike ? 4.8 + Math.random() * 2 : 0.02 + Math.random() * 0.1,
-      throughput_rpm: 1200 + Math.floor(Math.random() * 300),
+      cpu_usage: isSpike ? 88.5 + Math.random() * 8 : 28.0 + Math.random() * 14,
+      memory_usage: isSpike ? 78.2 + Math.random() * 5 : 42.0 + Math.random() * 8,
+      latency_p95_ms: isSpike ? 1850 + Math.random() * 400 : 45 + Math.random() * 25,
+      error_rate: isSpike ? 0.048 + Math.random() * 0.02 : 0.001 + Math.random() * 0.001,
+      disk_usage: 45.0,
+      network_traffic_kbps: 180.0,
+      request_count: 85,
+      active_connections: 22,
       timestamp: ts,
     });
   }
@@ -141,61 +160,52 @@ const generateFallbackMetrics = (serviceId: string): Metric[] => {
 const FALLBACK_LOGS: LogEntry[] = [
   {
     id: "log-101",
-    service_id: "checkout-service",
+    service_id: "payment-service",
     log_level: "ERROR",
-    message: "DBPoolTimeoutError: Connection acquisition timed out after 3000ms. Active: 50/50, Idle: 0",
-    trace_id: "tr-7f8a9b2c-checkout",
-    context_data: { pool_size: 50, waiting_requests: 142, tenant: "live-us" },
+    message: "DBPoolTimeoutError: Connection acquisition timed out after 5000ms. Active: 100/100, Idle: 0",
+    trace_id: "tr-7f8a9b2c-pay",
+    metadata_json: { pool_size: 100, waiting_requests: 84, db: "postgres-primary" },
     timestamp: new Date(Date.now() - 3 * 60000).toISOString(),
   },
   {
     id: "log-102",
-    service_id: "checkout-service",
-    log_level: "WARN",
-    message: "CircuitBreaker tripped to OPEN state for PaymentService::authorizeCharge",
-    trace_id: "tr-7f8a9b2c-checkout",
-    context_data: { consecutive_failures: 5, threshold: 5 },
-    timestamp: new Date(Date.now() - 6 * 60000).toISOString(),
+    service_id: "auth-service",
+    log_level: "ERROR",
+    message: "TokenVerificationTimeout: CPU starvation during JWT RSA signature verification loop",
+    trace_id: "tr-1a2b3c4d-auth",
+    metadata_json: { duration_ms: 1850, claims_length: 4096 },
+    timestamp: new Date(Date.now() - 7 * 60000).toISOString(),
   },
   {
     id: "log-103",
     service_id: "api-gateway",
     log_level: "WARN",
-    message: "Upstream response time 2640ms exceeded target SLA (500ms) on POST /api/v1/checkout/orders",
-    trace_id: "tr-1a2b3c4d-edge",
-    context_data: { client_ip: "198.51.100.42", method: "POST", path: "/api/v1/checkout/orders" },
-    timestamp: new Date(Date.now() - 9 * 60000).toISOString(),
+    message: "Upstream response time 1920ms exceeded target SLA (500ms) on POST /api/v1/auth/tokens",
+    trace_id: "tr-1a2b3c4d-auth",
+    metadata_json: { status_code: 504, client_ip: "10.212.10.42" },
+    timestamp: new Date(Date.now() - 10 * 60000).toISOString(),
   },
   {
     id: "log-104",
-    service_id: "payment-service",
+    service_id: "inventory-service",
     log_level: "INFO",
-    message: "Processed batch settlement for Stripe webhook event evt_3Nw2918F",
-    trace_id: "tr-99887766-pay",
-    context_data: { processed_records: 48, currency: "USD" },
-    timestamp: new Date(Date.now() - 14 * 60000).toISOString(),
-  },
-  {
-    id: "log-105",
-    service_id: "auth-service",
-    log_level: "INFO",
-    message: "Token introspection validated successfully for client billing-worker",
-    trace_id: "tr-aabbccdd-auth",
-    context_data: { scope: ["read:telemetry", "write:incidents"] },
-    timestamp: new Date(Date.now() - 18 * 60000).toISOString(),
+    message: "Inventory sync batch completed successfully: 2500 skus synced in 142ms",
+    trace_id: "tr-8899aabb-inv",
+    metadata_json: { batch_size: 2500, warehouse_id: "us-east-wh1" },
+    timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
   },
 ];
 
 const FALLBACK_DEPLOYMENTS: Deployment[] = [
   {
     id: "dep-001",
-    service_id: "checkout-service",
+    service_id: "auth-service",
     version: "v2.4.1",
     environment: "production",
     status: "SUCCESS",
-    deployed_by: "argocd-pipeline",
+    deployed_by: "github-actions",
     commit_hash: "a4f89d1",
-    timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
+    deployed_at: new Date(Date.now() - 45 * 60000).toISOString(),
   },
   {
     id: "dep-002",
@@ -203,26 +213,36 @@ const FALLBACK_DEPLOYMENTS: Deployment[] = [
     version: "v1.9.0",
     environment: "production",
     status: "SUCCESS",
-    deployed_by: "github-actions",
+    deployed_by: "argocd",
     commit_hash: "7bc32f0",
-    timestamp: new Date(Date.now() - 180 * 60000).toISOString(),
+    deployed_at: new Date(Date.now() - 180 * 60000).toISOString(),
   },
   {
     id: "dep-003",
-    service_id: "auth-service",
+    service_id: "order-service",
     version: "v3.1.2",
     environment: "production",
     status: "ROLLED_BACK",
     deployed_by: "deploy-bot",
     commit_hash: "0e44b91",
-    timestamp: new Date(Date.now() - 400 * 60000).toISOString(),
+    deployed_at: new Date(Date.now() - 400 * 60000).toISOString(),
   },
 ];
 
 export async function fetchServices(): Promise<Service[]> {
   try {
-    const data = await apiGet<Service[]>("/api/v1/services");
-    return data && data.length > 0 ? data : FALLBACK_SERVICES;
+    const data = await apiGet<any[]>("/api/v1/services");
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map((s) => ({
+        id: s.id,
+        name: s.name,
+        tier: (s.tier ?? "standard").toUpperCase(),
+        owner_team: s.owner_team,
+        environment: s.environment ?? "production",
+        created_at: s.created_at ?? new Date().toISOString(),
+      }));
+    }
+    return FALLBACK_SERVICES;
   } catch {
     return FALLBACK_SERVICES;
   }
@@ -233,40 +253,70 @@ export async function fetchMetrics(serviceId?: string, limit: number = 30): Prom
     const query = new URLSearchParams();
     if (serviceId) query.set("service_id", serviceId);
     query.set("limit", limit.toString());
-    const data = await apiGet<Metric[]>(`/api/v1/metrics?${query.toString()}`);
-    return data && data.length > 0 ? data : generateFallbackMetrics(serviceId || "checkout-service");
+    const data = await apiGet<any[]>(`/api/v1/metrics?${query.toString()}`);
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map((m) => ({
+        id: m.id,
+        service_id: m.service_id,
+        cpu_usage: Number(m.cpu_usage ?? m.cpu_utilization ?? 0),
+        memory_usage: Number(m.memory_usage ?? m.memory_utilization ?? 0),
+        latency_p95_ms: Number(m.latency_p95_ms ?? m.request_latency_p95 ?? 0),
+        error_rate: Number(m.error_rate ?? 0),
+        disk_usage: Number(m.disk_usage ?? 0),
+        network_traffic_kbps: Number(m.network_traffic_kbps ?? 0),
+        request_count: Number(m.request_count ?? 0),
+        active_connections: Number(m.active_connections ?? 0),
+        timestamp: m.timestamp ?? new Date().toISOString(),
+      }));
+    }
+    return generateFallbackMetrics(serviceId || "auth-service");
   } catch {
-    return generateFallbackMetrics(serviceId || "checkout-service");
+    return generateFallbackMetrics(serviceId || "auth-service");
   }
 }
 
 export async function fetchMetricsSummary(serviceId: string): Promise<MetricSummary> {
   try {
-    const data = await apiGet<MetricSummary>(`/api/v1/metrics/summary?service_id=${encodeURIComponent(serviceId)}`);
-    return data;
+    const s = await apiGet<any>(`/api/v1/metrics/summary?service_id=${encodeURIComponent(serviceId)}`);
+    if (s) {
+      return {
+        service_id: s.service_id ?? serviceId,
+        sample_count: Number(s.sample_count ?? 0),
+        avg_cpu_usage: Number(s.avg_cpu_usage ?? s.avg_cpu ?? 0),
+        max_cpu_usage: Number(s.max_cpu_usage ?? s.max_cpu ?? 0),
+        avg_memory_usage: Number(s.avg_memory_usage ?? s.avg_memory ?? 0),
+        max_memory_usage: Number(s.max_memory_usage ?? s.max_memory ?? 0),
+        avg_latency_p95_ms: Number(s.avg_latency_p95_ms ?? s.avg_latency_p95 ?? 0),
+        max_latency_p95_ms: Number(s.max_latency_p95_ms ?? s.max_latency_p95 ?? 0),
+        avg_error_rate: Number(s.avg_error_rate ?? 0),
+        max_error_rate: Number(s.max_error_rate ?? 0),
+      };
+    }
   } catch {
-    const metrics = generateFallbackMetrics(serviceId);
-    const avgCpu = metrics.reduce((a, b) => a + b.cpu_utilization, 0) / metrics.length;
-    const maxCpu = Math.max(...metrics.map((m) => m.cpu_utilization));
-    const avgMem = metrics.reduce((a, b) => a + b.memory_utilization, 0) / metrics.length;
-    const maxMem = Math.max(...metrics.map((m) => m.memory_utilization));
-    const avgLat = metrics.reduce((a, b) => a + b.request_latency_p95, 0) / metrics.length;
-    const maxLat = Math.max(...metrics.map((m) => m.request_latency_p95));
-    const avgErr = metrics.reduce((a, b) => a + b.error_rate, 0) / metrics.length;
-    const maxErr = Math.max(...metrics.map((m) => m.error_rate));
-    return {
-      service_id: serviceId,
-      avg_cpu: parseFloat(avgCpu.toFixed(2)),
-      max_cpu: parseFloat(maxCpu.toFixed(2)),
-      avg_memory: parseFloat(avgMem.toFixed(2)),
-      max_memory: parseFloat(maxMem.toFixed(2)),
-      avg_latency_p95: parseFloat(avgLat.toFixed(2)),
-      max_latency_p95: parseFloat(maxLat.toFixed(2)),
-      avg_error_rate: parseFloat(avgErr.toFixed(2)),
-      max_error_rate: parseFloat(maxErr.toFixed(2)),
-      sample_count: metrics.length,
-    };
+    // Fall through to fallback calculation
   }
+
+  const metrics = generateFallbackMetrics(serviceId);
+  const avgCpu = metrics.reduce((a, b) => a + b.cpu_usage, 0) / metrics.length;
+  const maxCpu = Math.max(...metrics.map((m) => m.cpu_usage));
+  const avgMem = metrics.reduce((a, b) => a + b.memory_usage, 0) / metrics.length;
+  const maxMem = Math.max(...metrics.map((m) => m.memory_usage));
+  const avgLat = metrics.reduce((a, b) => a + b.latency_p95_ms, 0) / metrics.length;
+  const maxLat = Math.max(...metrics.map((m) => m.latency_p95_ms));
+  const avgErr = metrics.reduce((a, b) => a + b.error_rate, 0) / metrics.length;
+  const maxErr = Math.max(...metrics.map((m) => m.error_rate));
+  return {
+    service_id: serviceId,
+    sample_count: metrics.length,
+    avg_cpu_usage: parseFloat(avgCpu.toFixed(2)),
+    max_cpu_usage: parseFloat(maxCpu.toFixed(2)),
+    avg_memory_usage: parseFloat(avgMem.toFixed(2)),
+    max_memory_usage: parseFloat(maxMem.toFixed(2)),
+    avg_latency_p95_ms: parseFloat(avgLat.toFixed(2)),
+    max_latency_p95_ms: parseFloat(maxLat.toFixed(2)),
+    avg_error_rate: parseFloat(avgErr.toFixed(4)),
+    max_error_rate: parseFloat(maxErr.toFixed(4)),
+  };
 }
 
 export async function fetchLogs(filters?: {
@@ -279,8 +329,20 @@ export async function fetchLogs(filters?: {
     if (filters?.service_id) query.set("service_id", filters.service_id);
     if (filters?.log_level) query.set("log_level", filters.log_level);
     if (filters?.search) query.set("search", filters.search);
-    const data = await apiGet<LogEntry[]>(`/api/v1/logs?${query.toString()}`);
-    return data && data.length > 0 ? data : FALLBACK_LOGS;
+    const data = await apiGet<any[]>(`/api/v1/logs?${query.toString()}`);
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map((l) => ({
+        id: l.id,
+        service_id: l.service_id,
+        log_level: (l.log_level ?? "INFO").toUpperCase(),
+        message: l.message ?? "",
+        trace_id: l.trace_id ?? null,
+        metadata_json: l.metadata_json ?? l.context_data ?? null,
+        context_data: l.metadata_json ?? l.context_data ?? null,
+        timestamp: l.timestamp ?? new Date().toISOString(),
+      }));
+    }
+    return FALLBACK_LOGS;
   } catch {
     let logs = FALLBACK_LOGS;
     if (filters?.service_id) logs = logs.filter((l) => l.service_id === filters.service_id);
@@ -296,8 +358,21 @@ export async function fetchLogs(filters?: {
 export async function fetchDeployments(serviceId?: string): Promise<Deployment[]> {
   try {
     const query = serviceId ? `?service_id=${encodeURIComponent(serviceId)}` : "";
-    const data = await apiGet<Deployment[]>(`/api/v1/deployments${query}`);
-    return data && data.length > 0 ? data : FALLBACK_DEPLOYMENTS;
+    const data = await apiGet<any[]>(`/api/v1/deployments${query}`);
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map((d) => ({
+        id: d.id,
+        service_id: d.service_id,
+        version: d.version ?? "v1.0.0",
+        environment: d.environment ?? "production",
+        status: d.status ?? "SUCCESS",
+        deployed_at: d.deployed_at ?? d.timestamp ?? new Date().toISOString(),
+        deployed_by: d.deployed_by ?? "argocd",
+        commit_hash: d.commit_hash ?? d.changelog ?? "HEAD",
+        timestamp: d.deployed_at ?? d.timestamp ?? new Date().toISOString(),
+      }));
+    }
+    return FALLBACK_DEPLOYMENTS;
   } catch {
     return FALLBACK_DEPLOYMENTS;
   }
@@ -308,8 +383,35 @@ export async function fetchIncidents(params?: { severity?: string; status?: stri
     const query = new URLSearchParams();
     if (params?.severity) query.set("severity", params.severity);
     if (params?.status) query.set("status", params.status);
-    const data = await apiGet<Incident[]>(`/api/v1/incidents?${query.toString()}`);
-    return data && data.length > 0 ? data : FALLBACK_INCIDENTS;
+    const data = await apiGet<any[]>(`/api/v1/incidents?${query.toString()}`);
+    if (Array.isArray(data) && data.length > 0) {
+      return data.map((i) => {
+        let symptomsArr: string[] = [];
+        if (Array.isArray(i.symptoms)) {
+          symptomsArr = i.symptoms;
+        } else if (typeof i.symptoms === "string") {
+          symptomsArr = i.symptoms.split(";").map((s: string) => s.trim()).filter(Boolean);
+        }
+        return {
+          id: i.id ?? i.incident_id,
+          incident_id: i.id ?? i.incident_id,
+          title: i.title ?? "Incident",
+          service_id: i.service_id,
+          severity: (i.severity ?? "P3_MEDIUM").toUpperCase(),
+          status: (i.status ?? "RESOLVED").toUpperCase(),
+          incident_type: i.incident_type ?? "ANOMALY",
+          symptoms: symptomsArr.length > 0 ? symptomsArr : ["Anomaly detected on telemetry stream"],
+          root_cause: i.root_cause,
+          root_cause_hypothesis: i.root_cause ?? i.root_cause_hypothesis ?? null,
+          resolution: i.resolution,
+          started_at: i.started_at ?? i.detected_at,
+          detected_at: i.started_at ?? i.detected_at ?? new Date().toISOString(),
+          mitigated_at: i.mitigated_at ?? null,
+          resolved_at: i.resolved_at ?? null,
+        };
+      });
+    }
+    return FALLBACK_INCIDENTS;
   } catch {
     let res = FALLBACK_INCIDENTS;
     if (params?.severity) res = res.filter((i) => i.severity === params.severity);
@@ -320,8 +422,9 @@ export async function fetchIncidents(params?: { severity?: string; status?: stri
 
 export async function fetchIncidentById(id: string): Promise<Incident | null> {
   try {
-    return await apiGet<Incident>(`/api/v1/incidents/${id}`);
+    const incs = await fetchIncidents();
+    return incs.find((i) => i.id === id || i.incident_id === id) ?? null;
   } catch {
-    return FALLBACK_INCIDENTS.find((i) => i.incident_id === id) ?? null;
+    return FALLBACK_INCIDENTS.find((i) => i.id === id || i.incident_id === id) ?? null;
   }
 }

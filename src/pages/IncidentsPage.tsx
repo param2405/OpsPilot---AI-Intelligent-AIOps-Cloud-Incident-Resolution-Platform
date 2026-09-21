@@ -148,7 +148,9 @@ export function IncidentsPage() {
                     </td>
                     <td>
                       <span className="idx">
-                        {new Date(inc.detected_at).toLocaleTimeString([], {
+                        {new Date(
+                          inc.detected_at || inc.started_at || Date.now(),
+                        ).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
@@ -214,7 +216,10 @@ export function IncidentsPage() {
             <div className="drawer-block">
               <span className="drawer-label">Observed Symptoms</span>
               <ul className="symptoms-list">
-                {activeIncident.symptoms.map((symptom, idx) => (
+                {(Array.isArray(activeIncident.symptoms)
+                  ? activeIncident.symptoms
+                  : [activeIncident.symptoms]
+                ).map((symptom: string, idx: number) => (
                   <li key={idx}>{symptom}</li>
                 ))}
               </ul>
@@ -224,6 +229,7 @@ export function IncidentsPage() {
               <span className="drawer-label">Root Cause Hypothesis</span>
               <div className="root-cause-box">
                 {activeIncident.root_cause_hypothesis ||
+                  activeIncident.root_cause ||
                   "Hypothesis synthesis in progress by root-cause agent..."}
               </div>
             </div>
@@ -233,7 +239,9 @@ export function IncidentsPage() {
               <div style={{ display: "grid", gap: 8, fontSize: 13, fontFamily: "var(--mono)" }}>
                 <div>
                   <span style={{ color: "var(--ink-faint)" }}>Detected: </span>
-                  {new Date(activeIncident.detected_at).toLocaleString()}
+                  {new Date(
+                    activeIncident.detected_at || activeIncident.started_at || Date.now(),
+                  ).toLocaleString()}
                 </div>
                 {activeIncident.mitigated_at && (
                   <div>
