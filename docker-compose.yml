@@ -39,7 +39,7 @@ services:
 
   web:
     build:
-      context: ./frontend
+      context: .
       dockerfile: Dockerfile.dev
     container_name: opspilot-web
     restart: unless-stopped
@@ -49,7 +49,7 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
+      - ./:/app
       - web_node_modules:/app/node_modules
     depends_on:
       - api

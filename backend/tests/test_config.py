@@ -12,5 +12,5 @@ def test_database_url_override_wins() -> None:
 
 
 def test_password_is_urlencoded_in_built_uri() -> None:
-    settings = Settings(postgres_password="p@ss/word")
+    settings = Settings(_env_file=None, postgres_password="p@ss/word")
     assert "p%40ss%2Fword" in settings.sqlalchemy_database_uri
