@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchIncidents, fetchServices, Incident, Service } from "../api/observability";
 
 export function IncidentsPage() {
+  const navigate = useNavigate();
   const [incidents, setIncidents] = useState<Incident[]>([]);
+
   const [services, setServices] = useState<Service[]>([]);
   const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
@@ -257,9 +260,26 @@ export function IncidentsPage() {
                 )}
               </div>
             </div>
+
+            <div style={{ marginTop: 20 }}>
+              <button
+                className="filter-btn active"
+                style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 600 }}
+                onClick={() =>
+                  navigate(
+                    `/investigation?incidentId=${encodeURIComponent(
+                      activeIncident.incident_id || activeIncident.id,
+                    )}`,
+                  )
+                }
+              >
+                Launch LangGraph AI Investigation ➔
+              </button>
+            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

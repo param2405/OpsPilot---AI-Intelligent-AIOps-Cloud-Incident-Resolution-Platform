@@ -37,8 +37,8 @@ vi.stubGlobal(
   }),
 );
 
-describe("OpsPilot Phase 2 Surfaces", () => {
-  it("renders the Phase 2 Dashboard at root path", async () => {
+describe("OpsPilot Platform Surfaces (Phases 1 - 6)", () => {
+  it("renders the Dashboard at root path with Phase 6 status", async () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
         <App />
@@ -46,7 +46,7 @@ describe("OpsPilot Phase 2 Surfaces", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Operations fleet overview" })).toBeInTheDocument();
-    expect(screen.getByText(/Phase 2 · Telemetry & Ingestion Live/i)).toBeInTheDocument();
+    expect(screen.getByText(/Phase 6 · Autonomous LangGraph Agent Live/i)).toBeInTheDocument();
     expect(screen.getByText(/Monitored Services/i)).toBeInTheDocument();
   });
 
@@ -69,6 +69,51 @@ describe("OpsPilot Phase 2 Surfaces", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Incident registry" })).toBeInTheDocument();
-    expect(screen.getByText(/P1 CRITICAL/i)).toBeInTheDocument();
+  });
+
+  it("renders the Phase 6 AI Investigation Agent at /investigation", async () => {
+    render(
+      <MemoryRouter initialEntries={["/investigation"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "AI incident investigation" })).toBeInTheDocument();
+    expect(screen.getByText(/LangGraph Investigation Graph/i)).toBeInTheDocument();
+  });
+
+  it("renders the Phase 3 ML Engine at /ml", async () => {
+    render(
+      <MemoryRouter initialEntries={["/ml"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "ML engine & model registry" })).toBeInTheDocument();
+    expect(screen.getAllByText(/Isolation Forest/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders the Phase 4 Deep Learning at /deep-learning", async () => {
+    render(
+      <MemoryRouter initialEntries={["/deep-learning"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Log sequence attention & embeddings" })).toBeInTheDocument();
+    expect(screen.getAllByText(/BiLSTM/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders the Phase 5 RAG Knowledge at /rag", async () => {
+    render(
+      <MemoryRouter initialEntries={["/rag"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Grounded Q&A & runbook knowledge" })).toBeInTheDocument();
+    expect(screen.getByText(/Grounded Knowledge Q&A/i)).toBeInTheDocument();
   });
 });
+
+

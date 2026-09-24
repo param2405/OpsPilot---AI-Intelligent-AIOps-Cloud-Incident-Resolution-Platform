@@ -1,0 +1,19 @@
+{
+  "template_to_event": {
+    "Health status green; active workers processing queue (<SVC>)": "E1",
+    "External payment gateway returned <NUM> Service Unavailable: [CircuitBreaker OPEN]": "E2",
+    "KeyError: 'STRIPE_WEBHOOK_SECRET_KEY' configuration parameter missing or invalid in environment": "E3",
+    "TCP socket packet retransmission rate elevated (packet_loss=<NUM>%)": "E4",
+    "Upstream timeout calling GET http:/<PATH>": "E5",
+    "Slow query detected: sequential scan on table inventory_items took <NUM>": "E6"
+  },
+  "event_to_template": {
+    "E1": "Health status green; active workers processing queue (<SVC>)",
+    "E2": "External payment gateway returned <NUM> Service Unavailable: [CircuitBreaker OPEN]",
+    "E3": "KeyError: 'STRIPE_WEBHOOK_SECRET_KEY' configuration parameter missing or invalid in environment",
+    "E4": "TCP socket packet retransmission rate elevated (packet_loss=<NUM>%)",
+    "E5": "Upstream timeout calling GET http:/<PATH>",
+    "E6": "Slow query detected: sequential scan on table inventory_items took <NUM>"
+  },
+  "counter": 6
+}

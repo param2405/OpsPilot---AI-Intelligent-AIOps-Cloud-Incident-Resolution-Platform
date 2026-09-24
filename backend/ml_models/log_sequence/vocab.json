@@ -1,0 +1,21 @@
+{
+  "token_to_idx": {
+    "<PAD>": 0,
+    "<UNK>": 1,
+    "<SOS>": 2,
+    "<EOS>": 3,
+    "E1": 4,
+    "E2": 5,
+    "E3": 6,
+    "E4": 7,
+    "E5": 8,
+    "E6": 9
+  },
+  "special_tokens": [
+    "<PAD>",
+    "<UNK>",
+    "<SOS>",
+    "<EOS>"
+  ],
+  "frozen": true
+}

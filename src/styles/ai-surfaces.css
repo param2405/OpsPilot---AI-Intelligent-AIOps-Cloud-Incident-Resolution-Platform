@@ -1,0 +1,533 @@
+/* OpsPilot AI - Phase 3, 4, 5, 6 AI & Agent Surfaces */
+
+/* Common Subheader / Badge */
+.phase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--filament-soft);
+  color: var(--filament);
+  border: 1px solid rgba(212, 120, 74, 0.35);
+}
+
+.phase-badge.sage {
+  background: var(--sage-soft);
+  color: var(--sage);
+  border-color: rgba(143, 191, 159, 0.35);
+}
+
+.phase-badge.blue {
+  background: rgba(88, 140, 211, 0.16);
+  color: #79a8e8;
+  border-color: rgba(121, 168, 232, 0.35);
+}
+
+.phase-badge.purple {
+  background: rgba(170, 110, 220, 0.16);
+  color: #c792ea;
+  border-color: rgba(199, 146, 234, 0.35);
+}
+
+/* Tabs */
+.ai-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.ai-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--ink-dim);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.ai-tab-btn:hover {
+  color: var(--ink);
+  background: var(--bg-elevated);
+}
+
+.ai-tab-btn.active {
+  color: var(--ink);
+  background: var(--bg-panel);
+  border-color: var(--line-strong);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* ==================== Phase 6: LangGraph Agent Visualizer ==================== */
+
+.agent-workflow-card {
+  padding: 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.graph-pipeline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 16px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.graph-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-width: 120px;
+  text-align: center;
+  transition: all 200ms ease;
+  position: relative;
+}
+
+.graph-node.active {
+  border-color: var(--filament);
+  box-shadow: 0 0 16px rgba(212, 120, 74, 0.4);
+  background: rgba(212, 120, 74, 0.1);
+}
+
+.graph-node.completed {
+  border-color: var(--sage);
+  background: rgba(143, 191, 159, 0.08);
+}
+
+.graph-node.router {
+  border-style: dashed;
+  border-color: var(--signal-wait);
+  background: rgba(201, 162, 39, 0.08);
+}
+
+.graph-node-idx {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+}
+
+.graph-node-title {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.graph-node-desc {
+  font-size: 10px;
+  color: var(--ink-dim);
+  line-height: 1.2;
+}
+
+.graph-arrow {
+  color: var(--ink-faint);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* RCA Callout Box */
+.rca-callout {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(212, 120, 74, 0.08), rgba(0, 0, 0, 0.4));
+  border: 1px solid var(--filament);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rca-callout-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rca-callout-head h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.rca-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+/* Confidence Gauge */
+.confidence-meter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.confidence-bar-bg {
+  width: 140px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--filament), var(--sage));
+  transition: width 400ms ease-out;
+}
+
+.confidence-score {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Evidence Grid */
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.evidence-card {
+  padding: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.evidence-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.evidence-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink-dim);
+}
+
+.evidence-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.evidence-source {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+/* Remediation Step Card */
+.remediation-card {
+  padding: 18px 20px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.remediation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.remediation-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--filament-soft);
+  color: var(--filament);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.code-block-wrap {
+  position: relative;
+  background: #0b0907;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+}
+
+.code-block-wrap pre {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e6dfd7;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink-dim);
+  padding: 4px 8px;
+  font-size: 11px;
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--ink);
+}
+
+/* Timeline Log */
+.timeline-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #090806;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.timeline-line {
+  color: var(--ink-dim);
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.timeline-line strong {
+  color: var(--filament);
+}
+
+/* ==================== Phase 4: Deep Learning Heatmap ==================== */
+
+.dl-sequence-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.dl-log-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  transition: all 140ms ease;
+}
+
+.dl-log-row.trigger {
+  border-color: var(--signal-bad);
+  background: rgba(211, 106, 88, 0.12);
+}
+
+.dl-log-weight-bar {
+  width: 90px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.dl-log-weight-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #79a8e8, var(--signal-bad));
+}
+
+.dl-event-chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink-dim);
+  flex-shrink: 0;
+}
+
+/* ==================== Phase 5: RAG Grounded QA ==================== */
+
+.rag-qa-card {
+  padding: 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rag-input-box {
+  display: flex;
+  gap: 12px;
+}
+
+.rag-text-input {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  outline: none;
+}
+
+.rag-text-input:focus {
+  border-color: var(--filament);
+}
+
+.rag-answer-box {
+  padding: 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rag-citation-card {
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid var(--filament);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rag-citation-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.rag-citation-snippet {
+  font-size: 12px;
+  color: var(--ink-dim);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ==================== Phase 3: ML Controls & Sliders ==================== */
+
+.ml-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ml-slider-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--ink-dim);
+}
+
+.ml-range-input {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.ml-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--filament);
+  cursor: pointer;
+}
+
+.probability-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.probability-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.probability-bar-fill {
+  height: 100%;
+  background: var(--filament);
+  border-radius: 999px;
+}

@@ -12,8 +12,22 @@ export default defineConfig({
       "/api": {
         target: apiProxyTarget,
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on("error", (err, _req, res) => {
+            if ("writeHead" in res && !res.headersSent) {
+              res.writeHead(503, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  status: "offline",
+                  detail: `Backend API offline at ${apiProxyTarget} (ECONNREFUSED). Running in offline fallback mode.`,
+                }),
+              );
+            }
+          });
+        },
       },
     },
+
   },
   test: {
     environment: "jsdom",

@@ -1,0 +1,158 @@
+{
+  "models": {
+    "anomaly": {
+      "versions": {
+        "v1.0.0": {
+          "version": "v1.0.0",
+          "algorithm": "isolation_forest",
+          "artifact_file": "isolation_forest_v1.0.0.joblib",
+          "feature_pipeline_file": "feature_pipeline_v1.0.0.joblib",
+          "created_at": "2026-09-23T05:03:29.479279+00:00",
+          "mlflow_run_id": "fead10c284874e56a8d5a96210e7a580",
+          "metrics": {
+            "precision": 0.0341,
+            "recall": 0.2308,
+            "f1": 0.0594,
+            "roc_auc": 0.5967,
+            "pr_auc": 0.017,
+            "test_anomalies_detected": 88,
+            "test_ground_truth_anomalies": 13
+          }
+        }
+      },
+      "active_version": "v1.0.0"
+    },
+    "classification": {
+      "versions": {
+        "v1.0.0": {
+          "version": "v1.0.0",
+          "algorithm": "xgboost",
+          "artifact_file": "xgboost_v1.0.0.joblib",
+          "feature_pipeline_file": null,
+          "created_at": "2026-09-23T05:03:34.804118+00:00",
+          "mlflow_run_id": "824c9ac76fed4591b998be414ce2e5bb",
+          "metrics": {
+            "accuracy": 1.0,
+            "macro_f1": 1.0,
+            "weighted_f1": 1.0,
+            "macro_precision": 1.0,
+            "macro_recall": 1.0,
+            "roc_auc_ovr": 1.0,
+            "confusion_matrix": [
+              [
+                30,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                30,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                30,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                30,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                30,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                0,
+                0,
+                30
+              ]
+            ],
+            "classes": [
+              "application",
+              "database",
+              "deployment",
+              "external_dependency",
+              "infrastructure",
+              "network"
+            ]
+          }
+        }
+      },
+      "active_version": "v1.0.0"
+    },
+    "severity": {
+      "versions": {
+        "v1.0.0": {
+          "version": "v1.0.0",
+          "algorithm": "xgboost",
+          "artifact_file": "xgboost_v1.0.0.joblib",
+          "feature_pipeline_file": null,
+          "created_at": "2026-09-23T05:03:35.908173+00:00",
+          "mlflow_run_id": "a948053fe5724d77a85b6afcbde762f0",
+          "metrics": {
+            "accuracy": 0.9944,
+            "macro_f1": 0.9954,
+            "weighted_f1": 0.9944,
+            "macro_precision": 0.9953,
+            "macro_recall": 0.9956,
+            "roc_auc_ovr": 0.9989,
+            "confusion_matrix": [
+              [
+                40,
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                56,
+                0,
+                1
+              ],
+              [
+                0,
+                0,
+                31,
+                0
+              ],
+              [
+                0,
+                0,
+                0,
+                52
+              ]
+            ],
+            "classes": [
+              "CRITICAL",
+              "HIGH",
+              "LOW",
+              "MEDIUM"
+            ]
+          }
+        }
+      },
+      "active_version": "v1.0.0"
+    }
+  }
+}

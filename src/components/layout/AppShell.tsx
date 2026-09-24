@@ -8,16 +8,20 @@ type AppShellProps = {
 };
 
 const routeHeaders: Record<string, { kicker: string; title: string }> = {
-  "/": { kicker: "Night desk · Telemetry", title: "Operations fleet overview" },
-  "/dashboard": { kicker: "Night desk · Telemetry", title: "Operations fleet overview" },
-  "/incidents": { kicker: "Incident command · Active", title: "Incident registry" },
-  "/metrics": { kicker: "Telemetry streams · Realtime", title: "Service metrics" },
-  "/logs": { kicker: "Trace correlation · Ingestion", title: "Distributed log explorer" },
-  "/foundation": { kicker: "Night desk · Local", title: "Instrument check" },
-  "/investigation": { kicker: "Phase 3 · Diagnostic", title: "AI investigation" },
-  "/recommendations": { kicker: "Phase 4 · Mitigation", title: "Recommendations" },
-  "/settings": { kicker: "Phase 5 · Admin", title: "Settings" },
+  "/": { kicker: "Phase 2 · Telemetry Fleet", title: "Operations fleet overview" },
+  "/dashboard": { kicker: "Phase 2 · Telemetry Fleet", title: "Operations fleet overview" },
+  "/incidents": { kicker: "Phase 2 · Incident Command", title: "Incident registry" },
+  "/metrics": { kicker: "Phase 2 · Observability", title: "Telemetry streams & anomaly overlay" },
+  "/logs": { kicker: "Phase 2 · Ingestion", title: "Distributed log explorer" },
+  "/foundation": { kicker: "Phase 1 · Foundation", title: "Instrument check" },
+  "/ml": { kicker: "Phase 3 · Machine Learning", title: "ML engine & model registry" },
+  "/deep-learning": { kicker: "Phase 4 · Deep Learning", title: "Log sequence attention & embeddings" },
+  "/rag": { kicker: "Phase 5 · Production RAG", title: "Grounded Q&A & runbook knowledge" },
+  "/investigation": { kicker: "Phase 6 · LangGraph Agent", title: "AI incident investigation" },
+  "/recommendations": { kicker: "Phase 6 · LangGraph Agent", title: "AI incident investigation" },
+  "/settings": { kicker: "System Config", title: "Platform settings" },
 };
+
 
 export function AppShell({ children }: AppShellProps) {
   const [now, setNow] = useState(() => new Date());

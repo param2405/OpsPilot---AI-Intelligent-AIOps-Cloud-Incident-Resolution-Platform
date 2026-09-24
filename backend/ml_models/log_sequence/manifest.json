@@ -1,0 +1,27 @@
+{
+  "champion_architecture": "lstm",
+  "vocab_size": 10,
+  "window_size": 15,
+  "stride": 3,
+  "results": {
+    "baseline": {
+      "test_f1": 1.0,
+      "test_recall": 1.0,
+      "test_precision": 1.0,
+      "test_roc_auc": 1.0
+    },
+    "lstm": {
+      "test_f1": 0.7619,
+      "test_recall": 0.6154,
+      "test_precision": 1.0,
+      "test_roc_auc": 1.0
+    },
+    "gru": {
+      "test_f1": 0.7,
+      "test_recall": 0.5385,
+      "test_precision": 1.0,
+      "test_roc_auc": 1.0
+    }
+  },
+  "timestamp": "2026-09-24 04:56:48 UTC"
+}

@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 def init_db() -> None:
     """Create all domain tables if they do not exist."""
     logger.info("Initializing database schema on %s...", engine.url)
+    if engine.dialect.name == "postgresql":
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.commit()
     Base.metadata.create_all(bind=engine)
     logger.info("Database schema initialized successfully.")
 

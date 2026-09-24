@@ -98,6 +98,39 @@ export function DashboardPage() {
         </div>
       </section>
 
+      {/* AIOps Platform Capabilities Banner */}
+      <section className="agent-workflow-card" style={{ padding: "20px 24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <span className="phase-badge">Phase 1 - 6 All Operational</span>
+              <span className="phase-badge sage">AIOps Intelligence Active</span>
+            </div>
+            <h3 style={{ margin: 0, fontFamily: "var(--display)", fontSize: 18, color: "var(--ink)" }}>
+              OpsPilot AI Incident Resolution Architecture
+            </h3>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--ink-dim)" }}>
+              Integrated telemetry, machine learning anomaly detectors, deep learning log sequence attention, RAG knowledge store, and LangGraph autonomous SRE agent.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <Link to="/ml" className="filter-btn">
+              ML Engine (Phase 3)
+            </Link>
+            <Link to="/deep-learning" className="filter-btn">
+              Deep Learning (Phase 4)
+            </Link>
+            <Link to="/rag" className="filter-btn">
+              RAG Knowledge (Phase 5)
+            </Link>
+            <Link to="/investigation" className="filter-btn active" style={{ fontWeight: 600 }}>
+              AI Agent (Phase 6) ➔
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Fleet Services Grid */}
       <section>
         <div className="section-head">
