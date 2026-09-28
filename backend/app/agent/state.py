@@ -16,6 +16,16 @@ class InvestigationState(TypedDict, total=False):
     severity: str
     time_range: str
 
+    # Deterministic ML & DL Upstream Pipeline Inputs
+    detected_anomaly: bool
+    anomaly_score: float
+    contributing_signals: List[str]
+    predicted_category: str
+    category_confidence: float
+    predicted_severity: str
+    severity_confidence: float
+    dl_log_analysis: Dict[str, Any]
+
     # Diagnostic Hypotheses & Domain Classification
     suspected_domain: str  # database, deployment, jvm_memory, messaging, general
     has_database_symptoms: bool

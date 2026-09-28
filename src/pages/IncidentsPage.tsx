@@ -10,6 +10,7 @@ export function IncidentsPage() {
   const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
   const [selectedService, setSelectedService] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeIncident, setActiveIncident] = useState<Incident | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,13 +29,31 @@ export function IncidentsPage() {
     if (selectedSeverity !== "ALL" && inc.severity !== selectedSeverity) return false;
     if (selectedStatus !== "ALL" && inc.status !== selectedStatus) return false;
     if (selectedService !== "ALL" && inc.service_id !== selectedService) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = (inc.title || "").toLowerCase().includes(q);
+      const matchId = (inc.incident_id || inc.id || "").toLowerCase().includes(q);
+      const matchSymptom = Array.isArray(inc.symptoms)
+        ? inc.symptoms.some((s) => s.toLowerCase().includes(q))
+        : typeof inc.symptoms === "string" && (inc.symptoms as string).toLowerCase().includes(q);
+      if (!matchTitle && !matchId && !matchSymptom) return false;
+    }
     return true;
   });
 
   return (
     <div className="page-container">
       {/* Filter Bar */}
-      <section className="filter-bar">
+      <section className="filter-bar" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+        <input
+          type="text"
+          className="search-input"
+          style={{ minWidth: 260, flex: 1 }}
+          placeholder="Filter incidents by title, ID, symptom, or keyword..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+
         <div className="filter-group">
           <span className="filter-label">Severity:</span>
           {["ALL", "P1_CRITICAL", "P2_HIGH", "P3_MEDIUM"].map((sev) => (
@@ -261,10 +280,23 @@ export function IncidentsPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 20 }}>
+            <div style={{ marginTop: 20, display: "grid", gap: 10 }}>
               <button
                 className="filter-btn active"
                 style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 600 }}
+                onClick={() =>
+                  navigate(
+                    `/incidents/${encodeURIComponent(
+                      activeIncident.incident_id || activeIncident.id,
+                    )}`,
+                  )
+                }
+              >
+                Inspect Incident Details Page ➔
+              </button>
+              <button
+                className="filter-btn"
+                style={{ width: "100%", padding: "10px", fontSize: 13 }}
                 onClick={() =>
                   navigate(
                     `/investigation?incidentId=${encodeURIComponent(

@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     postgres_db: str = "opspilot"
     database_url: str | None = Field(default=None)
 
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_password: str | None = None
+    redis_url: str | None = None
+
+    mlflow_tracking_uri: str = "http://localhost:5000"
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def cors_origin_list(self) -> list[str]:
@@ -42,6 +49,14 @@ class Settings(BaseSettings):
             f"postgresql+psycopg://{self.postgres_user}:{password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def resolved_redis_url(self) -> str:
+        if self.redis_url:
+            return self.redis_url
+        auth = f":{self.redis_password}@" if self.redis_password else ""
+        return f"redis://{auth}{self.redis_host}:{self.redis_port}/0"
 
     @property
     def is_development(self) -> bool:

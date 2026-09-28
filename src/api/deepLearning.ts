@@ -220,3 +220,6 @@ export async function getDLModelInfo(): Promise<DLModelInfoResponse> {
     return FALLBACK_DL_INFO;
   }
 }
+
+export { dlSemanticSearch as searchSemanticKnowledge };
+

@@ -2,14 +2,16 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     agent,
-    deployments,
     deep_learning,
+    deployments,
     health,
     incidents,
     logs,
     metrics,
     ml,
+    orchestration,
     rag,
+    remediations,
     services,
 )
 
@@ -24,5 +26,7 @@ api_router.include_router(ml.router)
 api_router.include_router(deep_learning.router)
 api_router.include_router(rag.router)
 api_router.include_router(agent.router)
+api_router.include_router(orchestration.router)
+api_router.include_router(remediations.router)
 
 

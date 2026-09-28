@@ -18,7 +18,8 @@ const routeHeaders: Record<string, { kicker: string; title: string }> = {
   "/deep-learning": { kicker: "Phase 4 · Deep Learning", title: "Log sequence attention & embeddings" },
   "/rag": { kicker: "Phase 5 · Production RAG", title: "Grounded Q&A & runbook knowledge" },
   "/investigation": { kicker: "Phase 6 · LangGraph Agent", title: "AI incident investigation" },
-  "/recommendations": { kicker: "Phase 6 · LangGraph Agent", title: "AI incident investigation" },
+  "/remediation": { kicker: "Phase 9 · Human-In-The-Loop", title: "Safe remediation & audit console" },
+  "/recommendations": { kicker: "Phase 9 · Human-In-The-Loop", title: "Safe remediation & audit console" },
   "/settings": { kicker: "System Config", title: "Platform settings" },
 };
 

@@ -29,31 +29,59 @@ def initial_analysis_node(state: InvestigationState) -> Dict[str, Any]:
     service = state.get("service", "unknown").lower()
     combined_text = f"{title} {description} {service}".lower()
 
-    # Domain hypothesis classification
+    # Check upstream deterministic ML classifier first
+    ml_category = state.get("predicted_category")
     suspected_domain = "general"
     has_db_symptoms = False
     check_deploy = False
 
-    if any(k in combined_text for k in ["postgres", "pool", "hikari", "database", "deadlock", "lock", "connection", "query"]):
-        suspected_domain = "database"
-        has_db_symptoms = True
-    elif any(k in combined_text for k in ["jvm", "heap", "oom", "outofmemoryerror", "garbage", "gc pause"]):
-        suspected_domain = "jvm_memory"
-    elif any(k in combined_text for k in ["kafka", "consumer", "rebalance", "lag", "partition", "topic"]):
-        suspected_domain = "messaging"
-    elif any(k in combined_text for k in ["deploy", "release", "canary", "rollout", "v2.", "v1."]):
-        suspected_domain = "deployment"
-        check_deploy = True
+    if ml_category and ml_category.upper() != "UNKNOWN":
+        cat_lower = ml_category.lower()
+        if "database" in cat_lower or "db" in cat_lower:
+            suspected_domain = "database"
+            has_db_symptoms = True
+        elif "deploy" in cat_lower:
+            suspected_domain = "deployment"
+            check_deploy = True
+        elif "jvm" in cat_lower or "memory" in cat_lower:
+            suspected_domain = "jvm_memory"
+        elif "messaging" in cat_lower or "queue" in cat_lower:
+            suspected_domain = "messaging"
+        elif "network" in cat_lower:
+            suspected_domain = "network"
+        else:
+            suspected_domain = cat_lower
+    else:
+        # Domain hypothesis classification heuristic fallback
+        if any(k in combined_text for k in ["postgres", "pool", "hikari", "database", "deadlock", "lock", "connection", "query"]):
+            suspected_domain = "database"
+            has_db_symptoms = True
+        elif any(k in combined_text for k in ["jvm", "heap", "oom", "outofmemoryerror", "garbage", "gc pause"]):
+            suspected_domain = "jvm_memory"
+        elif any(k in combined_text for k in ["kafka", "consumer", "rebalance", "lag", "partition", "topic"]):
+            suspected_domain = "messaging"
+        elif any(k in combined_text for k in ["deploy", "release", "canary", "rollout", "v2.", "v1."]):
+            suspected_domain = "deployment"
+            check_deploy = True
 
     timeline_entry = f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Initial analysis completed. Suspected failure domain: '{suspected_domain}'."
+    evidence_items = list(state.get("evidence", []))
+    if state.get("contributing_signals"):
+        for sig in state.get("contributing_signals", []):
+            evidence_items.append({
+                "category": "metric",
+                "source": "ml_anomaly_detection",
+                "description": f"ML anomaly detector flagged: {sig}",
+                "severity_contribution": "high",
+            })
 
     return {
         "incident_id": incident_id,
         "suspected_domain": suspected_domain,
         "has_database_symptoms": has_db_symptoms,
         "check_deployment_needed": check_deploy,
-        "evidence": [],
-        "sources": [],
+        "evidence": evidence_items,
+        "sources": list(state.get("sources", [])),
         "investigation_timeline": [timeline_entry],
     }
 
@@ -66,15 +94,18 @@ def collect_metrics_node(state: InvestigationState) -> Dict[str, Any]:
     service = state.get("service", "unknown")
     time_range = state.get("time_range", "1h")
 
-    metrics_out = get_metrics(service=service, time_range=time_range)
-    anomalies = metrics_out.anomalies_detected
-    metrics_data = metrics_out.metrics
-
-    # Statistical verification if anomalous
-    stat_summary = calculate_statistics(
-        data=list(metrics_data.values()),
-        metric_name=f"{service}_telemetry_snapshot",
-    )
+    try:
+        metrics_out = get_metrics(service=service, time_range=time_range)
+        anomalies = metrics_out.anomalies_detected
+        metrics_data = metrics_out.metrics
+        stat_summary = calculate_statistics(
+            data=list(metrics_data.values()),
+            metric_name=f"{service}_telemetry_snapshot",
+        )
+    except Exception as exc:
+        logger.warning("get_metrics tool failed gracefully: %s", exc)
+        anomalies = [f"Metrics query degraded: {str(exc)}"]
+        metrics_data = {}
 
     evidence_items = list(state.get("evidence", []))
     sources_items = list(state.get("sources", []))
@@ -320,6 +351,22 @@ def root_cause_analysis_node(state: InvestigationState) -> Dict[str, Any]:
     hist = state.get("historical_incidents", [])
 
     root_cause_parts: List[str] = []
+
+    # 1. Respect deterministic ML classification
+    ml_cat = state.get("predicted_category")
+    ml_conf = state.get("category_confidence", 0.0)
+    if ml_cat and ml_cat.upper() != "UNKNOWN":
+        root_cause_parts.append(
+            f"Deterministic ML classifier identified failure category as '{ml_cat}' (confidence: {ml_conf:.2f})."
+        )
+
+    # 2. Integrate Deep Learning Log Trigger Event
+    dl_info = state.get("dl_log_analysis")
+    if dl_info and dl_info.get("top_trigger_event"):
+        top_trig = dl_info["top_trigger_event"]
+        root_cause_parts.append(
+            f"Deep learning sequence attention identified primary trigger event (attention={top_trig.get('attention_weight', 0.0)}): \"{top_trig.get('log_message', '')}\"."
+        )
 
     if dep_corr:
         root_cause_parts.append(f"A recent canary release to '{service}' introduced heightened error rates.")

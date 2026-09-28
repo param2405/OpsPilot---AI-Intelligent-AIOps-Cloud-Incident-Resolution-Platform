@@ -12,6 +12,13 @@ from app.schemas.observability import (
     ServiceCreate,
     ServiceRead,
 )
+from app.schemas.orchestration import (
+    DLLogAnalysisResult,
+    IncidentInvestigationResponse,
+    InvestigationSummary,
+    PipelineHealthStatusResponse,
+    TelemetryIngestRequest,
+)
 
 __all__ = [
     "HealthResponse",
@@ -27,4 +34,9 @@ __all__ = [
     "DeploymentRead",
     "IncidentCreate",
     "IncidentRead",
+    "TelemetryIngestRequest",
+    "IncidentInvestigationResponse",
+    "InvestigationSummary",
+    "PipelineHealthStatusResponse",
+    "DLLogAnalysisResult",
 ]

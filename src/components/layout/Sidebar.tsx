@@ -1,16 +1,23 @@
 import { NavLink } from "react-router-dom";
 import { Mark } from "../brand/Mark";
 
-const items = [
-  { to: "/foundation", label: "Foundation", idx: "01", phase: "P1", later: false },
-  { to: "/", label: "Dashboard", idx: "02", phase: "P2", later: false },
-  { to: "/incidents", label: "Incidents", idx: "03", phase: "P2", later: false },
-  { to: "/metrics", label: "Metrics", idx: "04", phase: "P2", later: false },
-  { to: "/logs", label: "Logs", idx: "05", phase: "P2", later: false },
-  { to: "/ml", label: "ML Engine", idx: "06", phase: "P3", later: false },
-  { to: "/deep-learning", label: "Deep Learning", idx: "07", phase: "P4", later: false },
-  { to: "/rag", label: "RAG Knowledge", idx: "08", phase: "P5", later: false },
-  { to: "/investigation", label: "AI Investigation", idx: "09", phase: "P6", later: false },
+const corePages = [
+  { to: "/", label: "Dashboard", idx: "01", chip: "P8" },
+  { to: "/incidents", label: "Incidents", idx: "02", chip: "P8" },
+  { to: "/remediation", label: "Remediation & HITL", idx: "09", chip: "P9" },
+  { to: "/metrics", label: "Metrics", idx: "03", chip: "P8" },
+  { to: "/logs", label: "Logs", idx: "04", chip: "P8" },
+  { to: "/investigation", label: "AI Investigation", idx: "05", chip: "P8" },
+  { to: "/historical-incidents", label: "Historical Incidents", idx: "06", chip: "P8" },
+  { to: "/model-performance", label: "Model Performance", idx: "07", chip: "P8" },
+  { to: "/system-health", label: "System Health", idx: "08", chip: "P8" },
+];
+
+const subsystemExplorers = [
+  { to: "/foundation", label: "Foundation", idx: "F1", chip: "P1" },
+  { to: "/ml", label: "ML Engine", idx: "M3", chip: "P3" },
+  { to: "/deep-learning", label: "Deep Learning", idx: "D4", chip: "P4" },
+  { to: "/rag", label: "RAG Knowledge", idx: "R5", chip: "P5" },
 ];
 
 export function Sidebar() {
@@ -20,30 +27,49 @@ export function Sidebar() {
         <Mark />
         <div className="brand-copy">
           <strong>OpsPilot AI</strong>
-          <span>OP-06 / FULL AIOPS PLATFORM</span>
+          <span>OP-08 / PRODUCTION DASHBOARD</span>
         </div>
       </div>
-      <p className="nav-label">Platform Phases</p>
-      <nav className="nav" aria-label="Primary">
-        {items.map((item) => (
+
+      <p className="nav-label">Core Operations</p>
+      <nav className="nav" aria-label="Primary Core">
+        {corePages.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === "/" || item.to === "/foundation"}
-            className={({ isActive }) =>
-              [isActive ? "active" : "", item.later ? "locked" : ""].filter(Boolean).join(" ")
-            }
+            end={item.to === "/"}
+            className={({ isActive }) => (isActive ? "active" : "")}
           >
             <span className="idx">{item.idx}</span>
             <span>{item.label}</span>
             <span className="chip" style={{ background: "rgba(212, 120, 74, 0.15)", color: "var(--filament)" }}>
-              {item.phase}
+              {item.chip}
             </span>
           </NavLink>
         ))}
       </nav>
+
+      <p className="nav-label" style={{ marginTop: 16 }}>
+        Subsystems
+      </p>
+      <nav className="nav" aria-label="Subsystems">
+        {subsystemExplorers.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <span className="idx">{item.idx}</span>
+            <span>{item.label}</span>
+            <span className="chip" style={{ background: "rgba(143, 191, 159, 0.15)", color: "var(--sage)" }}>
+              {item.chip}
+            </span>
+          </NavLink>
+        ))}
+      </nav>
+
       <p className="sidebar-foot">Phase 6 · Autonomous LangGraph Agent Live</p>
+      <p className="sidebar-foot" style={{ marginTop: 2 }}>Phase 9 · Human-In-The-Loop Remediation Active</p>
     </aside>
   );
 }
-

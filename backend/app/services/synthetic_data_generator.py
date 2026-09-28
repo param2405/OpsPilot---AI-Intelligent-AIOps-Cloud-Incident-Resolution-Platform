@@ -17,6 +17,7 @@ from app.models.deployment import Deployment
 from app.models.incident import Incident
 from app.models.log import LogEntry
 from app.models.metric import Metric
+from app.models.remediation import RemediationAuditLog, RemediationRecommendation
 from app.models.service import Service
 
 
@@ -83,13 +84,161 @@ class SyntheticDataGenerator:
             total_metrics += len(svc_metrics)
             total_logs += len(svc_logs)
 
+        # 5. Seed Remediation Recommendations and Audit Logs (Phase 9)
+        total_remediations = self._seed_remediations(incidents)
+
         return {
             "services": len(services),
             "deployments": len(deployments),
             "incidents": len(incidents),
+            "remediations": total_remediations,
             "metrics": total_metrics,
             "logs": total_logs,
         }
+
+    def _seed_remediations(self, incidents: List[Incident]) -> int:
+        """Seed high-fidelity remediation recommendations and immutable audit logs."""
+        recs: List[RemediationRecommendation] = []
+        audit_logs: List[RemediationAuditLog] = []
+        now = datetime.now(timezone.utc)
+
+        # Action catalog mapping incident types to allowlisted actions
+        catalog = [
+            {
+                "status": "RECOMMENDED",
+                "action": "scale_service",
+                "params": {"service_name": "api-gateway", "replicas": 5, "direction": "up"},
+                "rationale": "Scale API gateway ingress pods from 2 to 5 to handle unexpected upstream traffic spike.",
+                "risk": "LOW",
+                "preview": "kubectl scale deployment/api-gateway --replicas=5 -n default",
+            },
+            {
+                "status": "APPROVED",
+                "action": "toggle_circuit_breaker",
+                "params": {"service_name": "payment-service", "enabled": True, "failure_threshold": 5, "reset_timeout_seconds": 60},
+                "rationale": "Trip circuit breaker to third-party payment gateway to prevent thread pool exhaustion.",
+                "risk": "MEDIUM",
+                "preview": "istioctl update destinationrule payment-service --circuit-breaker=consecutiveGatewayErrors=5",
+            },
+            {
+                "status": "EXECUTING",
+                "action": "restart_service",
+                "params": {"service_name": "auth-service", "grace_period_seconds": 30},
+                "rationale": "Rolling restart of auth-service pods to clear memory leak in JWT token verification cache.",
+                "risk": "LOW",
+                "preview": "kubectl rollout restart deployment/auth-service -n default",
+            },
+            {
+                "status": "SUCCESS",
+                "action": "rollback_deployment",
+                "params": {"service_name": "order-service", "target_version": "v2.3.9", "target_revision": 1},
+                "rationale": "Rollback faulty deployment v2.4.0 missing required STRIPE_WEBHOOK_SECRET_KEY env variable.",
+                "risk": "HIGH",
+                "preview": "kubectl rollout undo deployment/order-service --to-revision=1 -n default",
+                "audit": {
+                    "approved_by": "sre-lead@opspilot.io",
+                    "user_role": "SRE_LEAD",
+                    "comment": "Confirmed config drift on v2.4.0. Rollback approved.",
+                    "status": "SUCCESS",
+                    "output": "Rollback simulation executed: order-service successfully targeted to revision 1 (version v2.3.9).",
+                },
+            },
+            {
+                "status": "REJECTED",
+                "action": "clear_cache",
+                "params": {"service_name": "inventory-service", "cache_prefix": "inventory_item_"},
+                "rationale": "Evict all item keys from Redis cache to resolve query latency.",
+                "risk": "LOW",
+                "preview": "redis-cli --eval /scripts/clear_cache.lua inventory_item_*",
+                "audit": {
+                    "rejected_by": "lead-dba@opspilot.io",
+                    "user_role": "SRE_LEAD",
+                    "comment": "Cache eviction will trigger cache stampede on Postgres database. Use index hint instead.",
+                    "status": "REJECTED",
+                    "output": "Action rejected by operator before execution.",
+                },
+            },
+            {
+                "status": "FAILED",
+                "action": "scale_service",
+                "params": {"service_name": "notification-service", "replicas": 20, "direction": "up"},
+                "rationale": "Scale notification workers up to 20 instances to clear Celery queue backlog.",
+                "risk": "LOW",
+                "preview": "kubectl scale deployment/notification-service --replicas=20 -n default",
+                "audit": {
+                    "approved_by": "ops-oncall@opspilot.io",
+                    "user_role": "OPERATOR",
+                    "comment": "Approved queue worker expansion.",
+                    "status": "FAILED",
+                    "output": "Simulation failed: Node group pool resource quota exceeded (MaxReplicasReached: 12).",
+                },
+            },
+        ]
+
+        for i, item in enumerate(catalog):
+            # Match to incident if available, else pick first or index
+            inc = incidents[i % len(incidents)] if incidents else None
+            inc_id = inc.id if inc else f"INC-SYNTH-{i+1}"
+            svc_name = item["params"].get("service_name", "api-gateway")
+
+            rec_id = f"REC-SEED-{i+1:03d}-{uuid.uuid4().hex[:4].upper()}"
+            rec = RemediationRecommendation(
+                id=rec_id,
+                incident_id=inc_id,
+                action_type=item["action"],
+                target_service=svc_name,
+                parameters=item["params"],
+                rationale=item["rationale"],
+                risk_level=item["risk"],
+                status=item["status"],
+                command_preview=item["preview"],
+                runbook_reference=f"Runbook: SRE-PLAYBOOK-{item['action'].upper()}",
+                created_at=now - timedelta(hours=i * 2 + 1),
+                updated_at=now - timedelta(hours=i * 2),
+            )
+            recs.append(rec)
+
+            if "audit" in item:
+                audit_info = item["audit"]
+                is_rejection = audit_info.get("status") == "REJECTED"
+                approval_payload = {
+                    "approved_by": audit_info.get("approved_by"),
+                    "rejected_by": audit_info.get("rejected_by"),
+                    "user_role": audit_info["user_role"],
+                    "timestamp": (now - timedelta(hours=i * 2)).isoformat(),
+                    "comment": audit_info["comment"],
+                    "approval_status": audit_info["status"],
+                }
+                exec_result = {
+                    "output": audit_info["output"],
+                    "execution_duration_ms": 324.5 if not is_rejection else 0.0,
+                    "simulated": True,
+                    "validation_passed": not is_rejection,
+                    "logs": [
+                        f"[VALIDATOR] Verified allowlist membership for '{item['action']}'",
+                        f"[AUTHORIZATION] Approved by {audit_info.get('approved_by') or audit_info.get('rejected_by')} ({audit_info['user_role']})",
+                        f"[SIMULATOR] Result: {audit_info['output']}",
+                    ],
+                    "rollback_point": f"backup-snapshot-{rec_id}" if not is_rejection else None,
+                }
+                audit_log = RemediationAuditLog(
+                    id=f"AUD-SEED-{i+1:03d}-{uuid.uuid4().hex[:4].upper()}",
+                    recommendation_id=rec.id,
+                    incident_id=inc_id,
+                    requested_action=item["action"],
+                    action_parameters=item["params"],
+                    simulation_mode=True,
+                    user_approval=approval_payload,
+                    executor_result=exec_result,
+                    status=audit_info["status"],
+                    timestamp=now - timedelta(hours=i * 2),
+                )
+                audit_logs.append(audit_log)
+
+        self.db.add_all(recs)
+        self.db.add_all(audit_logs)
+        self.db.commit()
+        return len(recs)
 
     def _seed_services(self) -> List[Service]:
         services: List[Service] = []

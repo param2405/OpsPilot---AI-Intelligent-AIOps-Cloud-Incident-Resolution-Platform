@@ -1,4 +1,19 @@
+# =============================================================================
+# OpsPilot AI — Production Local Container Architecture (Phase 10)
+# =============================================================================
+#
+# Startup Order & Dependency Graph:
+#
+#   postgres (healthy) ──┐
+#   redis    (healthy) ──┼──► api (healthy) ──► web (healthy)
+#   mlflow   (healthy) ──┘        │
+#                                 └──► worker (healthy)
+# =============================================================================
+
 services:
+  # ---------------------------------------------------------------------------
+  # 1. PostgreSQL Database with pgvector Extension
+  # ---------------------------------------------------------------------------
   postgres:
     image: pgvector/pgvector:pg16
     container_name: opspilot-postgres
@@ -15,45 +30,182 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opspilot} -d ${POSTGRES_DB:-opspilot}"]
       interval: 5s
       timeout: 5s
-      retries: 12
+      retries: 10
+      start_period: 10s
+    networks:
+      - opspilot-net
 
+  # ---------------------------------------------------------------------------
+  # 2. Redis Cache & Queue Broker
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: opspilot-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - opspilot-net
+
+  # ---------------------------------------------------------------------------
+  # 3. MLflow Experiment Tracking & Model Registry Server
+  # ---------------------------------------------------------------------------
+  mlflow:
+    image: python:3.12-slim
+    container_name: opspilot-mlflow
+    restart: unless-stopped
+    command: >
+      sh -c "pip install --no-cache-dir mlflow>=2.11.0 &&
+             mlflow server
+             --backend-store-uri sqlite:////mlflow/mlflow.db
+             --default-artifact-root /mlflow/artifacts
+             --host 0.0.0.0
+             --port 5000"
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - opspilot-net
+
+  # ---------------------------------------------------------------------------
+  # 4. FastAPI Backend Application (REST APIs & Intelligent Orchestration)
+  # ---------------------------------------------------------------------------
   api:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: opspilot-api
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
       POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-opspilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opspilot_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-opspilot}
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-opspilot}:${POSTGRES_PASSWORD:-opspilot_dev_password}@postgres:5432/${POSTGRES_DB:-opspilot}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend/app:/app/app
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+      redis:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    stop_signal: SIGTERM
+    stop_grace_period: 30s
+    networks:
+      - opspilot-net
 
+  # ---------------------------------------------------------------------------
+  # 5. Background Asynchronous Worker (Telemetry Polling & Anomaly Tasks)
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: opspilot-worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.jobs.worker"]
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-opspilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opspilot_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-opspilot}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-opspilot}:${POSTGRES_PASSWORD:-opspilot_dev_password}@postgres:5432/${POSTGRES_DB:-opspilot}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      WORKER_INTERVAL_SECONDS: ${WORKER_INTERVAL_SECONDS:-10}
+      WORKER_HEARTBEAT_FILE: /tmp/opspilot/worker_heartbeat
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/opspilot/worker_heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    stop_signal: SIGTERM
+    stop_grace_period: 30s
+    networks:
+      - opspilot-net
+
+  # ---------------------------------------------------------------------------
+  # 6. React Production Web Dashboard (Nginx Reverse Proxy & Static SPA)
+  # ---------------------------------------------------------------------------
   web:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: opspilot-web
     restart: unless-stopped
-    environment:
-      VITE_API_BASE_URL: ""
-      API_PROXY_TARGET: http://api:8000
     ports:
-      - "5173:5173"
-    volumes:
-      - ./:/app
-      - web_node_modules:/app/node_modules
+      - "${WEB_PORT:-80}:80"
+      - "${VITE_DEV_PORT:-5173}:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    stop_signal: SIGQUIT
+    stop_grace_period: 15s
+    networks:
+      - opspilot-net
 
+# =============================================================================
+# Persistent Data Volumes
+# =============================================================================
 volumes:
   postgres_data:
-  web_node_modules:
+    driver: local
+  redis_data:
+    driver: local
+  mlflow_data:
+    driver: local
+
+# =============================================================================
+# Clean Isolated Bridge Network
+# =============================================================================
+networks:
+  opspilot-net:
+    driver: bridge

@@ -8,6 +8,8 @@ from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.deployment import Deployment
+    from app.models.investigation import IncidentInvestigation
+    from app.models.remediation import RemediationRecommendation
     from app.models.service import Service
 
 
@@ -42,4 +44,14 @@ class Incident(Base):
     related_deployment: Mapped[Optional["Deployment"]] = relationship(
         "Deployment",
         back_populates="incidents",
+    )
+    investigations: Mapped[list["IncidentInvestigation"]] = relationship(
+        "IncidentInvestigation",
+        back_populates="incident",
+        cascade="all, delete-orphan",
+    )
+    remediations: Mapped[list["RemediationRecommendation"]] = relationship(
+        "RemediationRecommendation",
+        back_populates="incident",
+        cascade="all, delete-orphan",
     )

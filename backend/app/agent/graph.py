@@ -130,6 +130,7 @@ investigation_graph = build_incident_investigation_graph().compile()
 def run_incident_investigation(
     request: InvestigationRequest,
     db: Optional[Session] = None,
+    context_overrides: Optional[Dict[str, Any]] = None,
 ) -> InvestigationResult:
     """Execute the compiled LangGraph incident investigation workflow and format structured result."""
     initial_state: InvestigationState = {
@@ -140,6 +141,8 @@ def run_incident_investigation(
         "severity": request.severity,
         "time_range": request.time_range,
     }
+    if context_overrides:
+        initial_state.update(context_overrides)
 
     logger.info("Executing LangGraph investigation for incident %s on service %s", initial_state["incident_id"], request.service)
     final_state = investigation_graph.invoke(initial_state)
