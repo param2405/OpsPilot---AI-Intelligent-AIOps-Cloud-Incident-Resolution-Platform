@@ -24,6 +24,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy pyproject.toml and install Python packages
 COPY pyproject.toml /build/
 RUN pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
     && pip install .
 
 # =============================================================================
