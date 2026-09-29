@@ -34,6 +34,10 @@ class Settings(BaseSettings):
 
     mlflow_tracking_uri: str = "http://localhost:5000"
 
+    aws_region: str = "us-east-1"
+    s3_artifact_bucket: str | None = None
+    s3_endpoint_url: str | None = None
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def cors_origin_list(self) -> list[str]:

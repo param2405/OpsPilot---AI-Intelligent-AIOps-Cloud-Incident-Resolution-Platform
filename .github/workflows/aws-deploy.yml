@@ -1,0 +1,112 @@
+name: OpsPilot AI — Production AWS CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write   # Required for AWS OIDC authentication (Zero hardcoded credentials)
+  contents: read
+
+jobs:
+  test:
+    name: Run Unit & Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install .[dev]
+
+      - name: Execute Pytest Suite
+        run: |
+          cd backend
+          pytest
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install Frontend Dependencies & Lint
+        run: |
+          npm ci
+          npm run build
+
+  deploy:
+    name: Deploy to AWS
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+      AWS_REGION: us-east-1
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials via OIDC (Zero Hardcoded Keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/opspilot-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag, and Push Backend Image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: opspilot-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile backend/
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+
+      - name: Terraform Init & Apply
+        run: |
+          cd infra/terraform
+          terraform init
+          terraform apply -auto-approve \
+            -var-file="environments/${{ env.ENVIRONMENT }}.tfvars" \
+            -var="container_image_api=${{ env.IMAGE_URI }}" \
+            -var="container_image_worker=${{ env.IMAGE_URI }}"
+
+      - name: Build and Sync Frontend to S3 & Invalidate CloudFront
+        run: |
+          npm ci
+          npm run build
+          FRONTEND_BUCKET=$(cd infra/terraform && terraform output -raw frontend_bucket_name)
+          DIST_ID=$(cd infra/terraform && terraform output -raw cloudfront_distribution_id)
+          aws s3 sync dist/ s3://${FRONTEND_BUCKET}/ --delete
+          aws cloudfront create-invalidation --distribution-id ${DIST_ID} --paths "/*"
+
+      - name: Wait for ECS Rolling Deployment Stability
+        run: |
+          ECS_CLUSTER=$(cd infra/terraform && terraform output -raw ecs_cluster_name)
+          aws ecs wait services-stable \
+            --cluster ${ECS_CLUSTER} \
+            --services opspilot-api-${{ env.ENVIRONMENT }} opspilot-worker-${{ env.ENVIRONMENT }}
