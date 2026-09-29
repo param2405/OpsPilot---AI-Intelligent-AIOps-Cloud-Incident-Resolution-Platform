@@ -50,7 +50,7 @@ COPY --from=builder /opt/venv /opt/venv
 # Create non-root system user and group for security compliance
 RUN groupadd -g 10001 opspilot \
     && useradd -u 10001 -g opspilot -m -d /home/opspilot -s /bin/bash opspilot \
-    && mkdir -p /app/app /tmp/opspilot \
+    && mkdir -p /app/app /app/data /tmp/opspilot \
     && chown -R opspilot:opspilot /app /tmp/opspilot
 
 # Copy application source code

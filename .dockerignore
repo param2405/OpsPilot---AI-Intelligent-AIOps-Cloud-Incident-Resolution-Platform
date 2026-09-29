@@ -1,6 +1,52 @@
+# Version Control & CI/CD
+.git
+.github
+
+# Dependencies & Build Artifacts
 node_modules
 dist
 .vite
 *.tsbuildinfo
+
+# Python Environments & Cache
+__pycache__
+*.py[cod]
+*$py.class
 .venv
-*.db
+venv
+env
+ENV
+**/.venv
+**/venv
+backend/.venv
+backend/opspilot.db
+backend/mlflow.db
+backend/.pytest_cache
+
+# Local Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# MLflow Local Tracking Databases & Runs
+mlflow.db
+mlruns
+
+# Terraform Local State & Cache
+terraform.tfstate
+terraform.tfstate.*
+.terraform
+*.tfplan
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# NOTE: backend/ml_models/ is explicitly included and NOT ignored.

@@ -1,5 +1,6 @@
 # Environments & Secrets
 .env
+.env.*
 *.env
 !.env.example
 backend/.env
@@ -13,6 +14,7 @@ ENV/
 
 # Python Cache & Bytecode
 __pycache__/
+*.pyc
 *.py[cod]
 *$py.class
 backend/app/**/__pycache__/
@@ -28,6 +30,13 @@ backend/opspilot_ai.egg-info/
 *.db
 *.sqlite3
 backend/opspilot.db
+mlflow.db
+mlruns/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
 
 # Testing & Coverage
 .pytest_cache/
@@ -36,9 +45,6 @@ htmlcov/
 
 # Node / Frontend
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
 # IDE & Editor
 .vscode/
